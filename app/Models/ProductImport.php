@@ -53,6 +53,34 @@ class ProductImport extends Model
         return $this->hasMany(ProductImportError::class);
     }
 
+    public static function queue(string $disk, string $path, string $originalFilename, ?User $user = null): self
+    {
+        $import = new self;
+        $import->forceFill([
+            'user_id' => $user?->getKey(),
+            'disk' => $disk,
+            'path' => $path,
+            'original_filename' => $originalFilename,
+            'status' => ImportStatus::Queued,
+        ])->save();
+
+        return $import;
+    }
+
+    public function markFailed(string $message): void
+    {
+        $this->forceFill([
+            'status' => ImportStatus::Failed,
+            'failure_message' => $message,
+            'finished_at' => now(),
+        ])->save();
+    }
+
+    public function rejectedCount(): int
+    {
+        return $this->duplicate_count + $this->invalid_count;
+    }
+
     public function progressPercentage(): int
     {
         if ($this->status === ImportStatus::Completed) {

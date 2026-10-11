@@ -21,7 +21,7 @@ final class ProductRules
             'sku' => ['required', 'string', 'max:64', 'regex:'.self::SKU_PATTERN],
             'description' => ['nullable', 'string', 'max:5000', new NoHtml],
             'category' => ['required', 'string', 'max:100', new NoHtml],
-            'price' => ['required', 'decimal:0,2', 'gte:0.01', 'lte:'.(self::MAX_PRICE_CENTS / 100)],
+            'price' => ['required', 'decimal:0,2', 'regex:/^\d+(\.\d{1,2})?$/', 'gte:0.01', 'lte:'.(self::MAX_PRICE_CENTS / 100)],
             'stock' => ['required', 'integer', 'min:0', 'max:'.self::MAX_STOCK],
             'weight_kg' => ['nullable', 'numeric', 'decimal:0,3', 'min:0', 'max:10000'],
         ];
@@ -42,6 +42,7 @@ final class ProductRules
             'sku.regex' => 'The SKU may only contain letters, numbers, dots, dashes and underscores.',
             'sku.unique' => 'This SKU is already used by another product.',
             'price.decimal' => 'The price must be a number with at most 2 decimals.',
+            'price.regex' => 'The price must be a number with at most 2 decimals.',
             'price.gte' => 'The price must be greater than zero.',
             'stock.min' => 'The stock cannot be negative.',
         ];
