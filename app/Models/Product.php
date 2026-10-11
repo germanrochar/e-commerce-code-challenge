@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Support\Money;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -48,8 +47,17 @@ class Product extends Model
         return $this->stock > 0 && $this->stock <= self::LOW_STOCK_THRESHOLD;
     }
 
-    protected function imageUrl(): Attribute
+    public function imageUrl(): string
     {
-        return Attribute::get(fn (): string => self::PLACEHOLDER_IMAGE);
+        return self::PLACEHOLDER_IMAGE;
+    }
+
+    public function categorySummary(): ?array
+    {
+        $category = $this->category;
+
+        return $category instanceof Category
+            ? ['name' => $category->name, 'slug' => $category->slug]
+            : null;
     }
 }
