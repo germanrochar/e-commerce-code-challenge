@@ -190,13 +190,6 @@ This is the decision that changed during planning.
     - **Against the database,** a SKU that already exists, including on a soft-deleted product, is rejected with `SKU 'RS-001' already exists.`
     - **An invalid first occurrence doesn't count:** if row 5 is invalid and row 9 has the same SKU and is valid, row 9 is imported.
 
-Why I changed it:
-
-- **An upsert silently overwrites live data.** One wrong row in a bulk file would change the price or stock of a product people are buying, with no review step. Stock is especially dangerous: an import must never overwrite numbers the checkout is decrementing.
-- **The sample file shows the ambiguity.** Row 36 repeats `RS-001` with a new description ("Updated lightweight shoes…") and a higher price. Row 56 reuses `BS-021` for a product described as "Same SKU different description and price". The first looks like a correction, the second like a mistake. The importer can't tell them apart, so it shouldn't guess.
-- **Errors are visible and actionable.** Every rejected row is listed in the admin panel with its row number and reason, and the rejected rows can be downloaded as a CSV, fixed and uploaded again. Intended changes to existing products are made deliberately through the product form.
-- **Imports become safe to repeat.** Uploading the same file twice creates nothing the second time and reports every row as already existing. A test covers this, and it also makes a retried import job harmless.
-
 Alternatives considered:
 
 - **Upsert with last row winning:** rejected for the reasons above.
@@ -216,18 +209,11 @@ The brief's file has 97 rows, but I designed for files of 10,000 to 100,000+ row
 - **Flexible headers.** Columns are matched by name, not position, ignoring case, spaces and a byte-order mark; extra columns are ignored. A file missing required columns fails straight away with a message naming the missing columns.
 - **Measured:** 100,000 rows import in about 43 seconds on the development image, which runs without OPcache.
 
-Alternatives considered:
-
-- **Synchronous import in the request:** fine for 97 rows, but times out at 10k+ and blocks a PHP worker.
-- **Laravel Excel:** a big dependency for a CSV-only feature, and it's less direct about chunked inserts and resuming.
-- **`LOAD DATA INFILE`:** the fastest option, but it can't run row-level validation or produce per-row error messages.
-
 ### Import errors in their own table
 
 Each problem is a row in `product_import_errors`, with the row number, SKU, column, type, message and the original values.
 
 - **Why:** a 100,000-row file can produce thousands of errors. A table can be paginated and filtered (invalid or duplicate) on the import page, and streamed into the rejected-rows CSV.
-- **Alternative:** a JSON column on the import record. It's simpler, but it has to be loaded in full and can't be paginated or queried.
 
 ### Catalog search: MySQL full-text search
 
@@ -242,17 +228,14 @@ Search uses an InnoDB `FULLTEXT` index on name and description in boolean mode.
 Alternatives considered:
 
 - **`LIKE '%term%'`:** can't use an index and gets slow with many products.
-- **Laravel Scout with Meilisearch or Elasticsearch:** typo tolerance and better ranking, at the cost of another service to run and keep in sync. This is the upgrade path if search quality or volume demands it.
 
 ### Docker: nginx and PHP-FPM, zero configuration
 
 The image is built on [serversideup/php](https://serversideup.net/open-source/docker-php/) with nginx and PHP-FPM.
 
-- **Production tuning:** OPcache, JIT and class preloading are on, PHP-FPM uses a fixed pool of 16 workers, and Laravel's caches are built at startup.
+- **Production tuning:** PHP-FPM uses a fixed pool of 16 workers, and Laravel's caches are built at startup.
 - **Separate containers** run the web app, the default queue, the import queue and the scheduler. Each can be scaled on its own, and the web container keeps no state on its own disk.
 - **Zero configuration:** a bootstrap script generates and shares the app key, waits for MySQL, runs migrations and seeds. Interviewers only need `make setup`, or one `docker compose` command without `make`.
-- **Octane with FrankenPHP:** I considered it for throughput, then decided against it. It keeps the app in memory between requests, which brings memory-leak and shared-state risks, and nginx with PHP-FPM is the more familiar, battle-tested setup. With OPcache and preloading, PHP-FPM is fast enough for this app.
-- **Alternative:** Laravel Sail. It's great for development, but its images aren't meant for production-like runs.
 
 ### CI on every push
 
@@ -263,14 +246,6 @@ It runs three jobs:
 1. **Tests:** the PHPUnit suite on a MySQL service.
 2. **Lint:** Pint, Larastan at level 7, frontend lint and format, and the TypeScript check.
 3. **Docker smoke test:** builds the stack from scratch, waits for health checks, and checks that the sample products are served.
-
-### No code comments
-
-The brief says to remove comments if AI is used, so the codebase has none, docblocks included. To keep strict static analysis without type docblocks:
-
-- The code narrows types with `instanceof` checks and returns concrete types.
-- Larastan is configured to skip only the "missing generic type" and "missing iterable value type" checks, which can't be satisfied without docblocks.
-- Tests and descriptive names do the explaining instead.
 
 ### Placeholder product images
 
@@ -296,30 +271,6 @@ These parts are designed and the database tables exist, but they aren't implemen
     - Rate limits for search, cart and checkout.
     - An optional MySQL read replica.
     - k6 load tests, including 200 shoppers racing for 50 units of stock to show there's no overselling.
-
-## How the sample CSV's data problems are handled
-
-| Row(s) | Problem in the file                              | Result                                                       |
-| ------ | ------------------------------------------------ | ------------------------------------------------------------ |
-| 4      | Price written as `$29.99`                        | Accepted as `29.99`; the currency symbol is stripped         |
-| 7      | Price is `free`                                  | Rejected: the price must be a number with at most 2 decimals |
-| 16     | Stock is `-5`                                    | Rejected: stock can't be negative                            |
-| 20     | Name is `<script>alert('xss')</script>`          | Rejected: names can't contain HTML                           |
-| 25     | Name is empty                                    | Rejected: the name is required                               |
-| 29     | Name looks like SQL injection                    | Accepted and stored as plain text                            |
-| 31     | Em dash and `™` in the description               | Accepted; UTF-8 is preserved                                 |
-| 36     | Repeats SKU `RS-001` from row 2 with a new price | Rejected as a duplicate of row 2                             |
-| 41     | Name is only spaces                              | Rejected: the name is required once trimmed                  |
-| 47     | Price is `0.00`                                  | Rejected: the price must be greater than zero                |
-| 50     | Weight is empty                                  | Accepted; weight is optional                                 |
-| 51     | Stock is `0`                                     | Accepted and shown as out of stock                           |
-| 52     | Category is empty                                | Rejected: the category is required                           |
-| 53, 59 | Commas and escaped quotes in the name            | Accepted; parsed correctly                                   |
-| 55     | Same name as row 2 with a different SKU          | Accepted; names don't have to be unique                      |
-| 56, 89 | Repeat SKU `BS-021` from row 11                  | Rejected as duplicates of row 11                             |
-| 62, 63 | Empty rows (`,,,,,,`)                            | Skipped and counted as empty                                 |
-
-The result: 85 products created, 7 invalid rows, 3 duplicates and 2 empty rows skipped. A test asserts these exact counts and messages, and the import page shows each rejected row.
 
 ## How AI was used
 
