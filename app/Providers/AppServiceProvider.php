@@ -2,26 +2,47 @@
 
 namespace App\Providers;
 
+use App\Cart\ShoppingCart;
 use App\Jobs\ImportProducts;
+use App\Listeners\MergeGuestCart;
 use App\Models\User;
+use App\Payments\FakePaymentGateway;
+use App\Payments\PaymentGateway;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\Session\Session;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void {}
+    public function register(): void
+    {
+        $this->app->bind(ShoppingCart::class, function (Application $app): ShoppingCart {
+            $user = $app->make('auth')->user();
+
+            return new ShoppingCart($app->make(Session::class), $user instanceof User ? $user : null);
+        });
+
+        $this->app->singleton(PaymentGateway::class, fn (): PaymentGateway => new FakePaymentGateway(
+            (int) config('services.payments.fake_latency_ms'),
+        ));
+    }
 
     public function boot(): void
     {
         $this->configureDefaults();
         $this->configureAuthorization();
         $this->configureDevCommands();
+
+        Event::listen(Login::class, MergeGuestCart::class);
     }
 
     protected function configureDevCommands(): void
