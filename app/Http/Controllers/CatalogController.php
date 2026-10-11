@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Catalog\CatalogCache;
 use App\Catalog\ProductSearch;
 use App\Http\Resources\Paginated;
 use App\Http\Resources\ProductResource;
@@ -12,16 +13,24 @@ use Inertia\Response;
 
 class CatalogController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, CatalogCache $cache): Response
     {
         $search = ProductSearch::fromRequest($request);
-        $category = $search->category();
+        $page = max(1, $request->integer('page', 1));
+
+        $payload = $cache->withLiveStock($cache->rememberPage($search, $page, function () use ($search): array {
+            $category = $search->category();
+
+            return [
+                'products' => Paginated::of($search->paginate(), ProductResource::class),
+                'categories' => $search->categoryFacets(),
+                'activeCategory' => $category ? ['name' => $category->name, 'slug' => $category->slug] : null,
+            ];
+        }));
 
         return Inertia::render('store/Catalog', [
-            'products' => Paginated::of($search->paginate(), ProductResource::class),
-            'categories' => $search->categoryFacets(),
+            ...$payload,
             'filters' => $search->filters(),
-            'activeCategory' => $category ? ['name' => $category->name, 'slug' => $category->slug] : null,
         ]);
     }
 

@@ -6,12 +6,13 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [CatalogController::class, 'index'])->name('home');
+Route::get('/', [CatalogController::class, 'index'])->middleware('throttle:catalog')->name('home');
 Route::get('products/{product:sku}', [CatalogController::class, 'show'])->name('products.show');
 
 Route::controller(CartController::class)
     ->prefix('cart')
     ->name('cart.')
+    ->middleware('throttle:cart')
     ->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('items', 'store')->name('items.store');
@@ -20,8 +21,10 @@ Route::controller(CartController::class)
     });
 
 Route::middleware('auth')->group(function () {
-    Route::get('checkout', [CheckoutController::class, 'show'])->name('checkout.show');
-    Route::post('checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::middleware('throttle:checkout')->group(function () {
+        Route::get('checkout', [CheckoutController::class, 'show'])->name('checkout.show');
+        Route::post('checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    });
 
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('orders/{order}', [OrderController::class, 'show'])->whereUuid('order')->name('orders.show');

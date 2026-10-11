@@ -10,14 +10,17 @@ use App\Payments\FakePaymentGateway;
 use App\Payments\PaymentGateway;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\DevCommands;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -40,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureAuthorization();
+        $this->configureRateLimiting();
         $this->configureDevCommands();
 
         Event::listen(Login::class, MergeGuestCart::class);
@@ -79,5 +83,18 @@ class AppServiceProvider extends ServiceProvider
     protected function configureAuthorization(): void
     {
         Gate::define('access-admin', fn (User $user): bool => $user->isAdmin());
+    }
+
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('catalog', fn (Request $request) => Limit::perMinute(60)->by($request->ip()));
+
+        RateLimiter::for('cart', fn (Request $request) => Limit::perMinute(30)->by(
+            (string) ($request->user()?->id ?: $request->session()->getId() ?: $request->ip()),
+        ));
+
+        RateLimiter::for('checkout', fn (Request $request) => Limit::perMinute(10)->by(
+            (string) ($request->user()?->id ?: $request->ip()),
+        ));
     }
 }

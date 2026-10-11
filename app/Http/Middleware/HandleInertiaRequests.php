@@ -43,7 +43,13 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
                 'isAdmin' => (bool) $request->user()?->isAdmin(),
             ],
-            'cartCount' => fn (): int => app(ShoppingCart::class)->count(),
+            'cartCount' => function () use ($request): int {
+                if ($request->routeIs('admin.*')) {
+                    return 0;
+                }
+
+                return app(ShoppingCart::class)->count();
+            },
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

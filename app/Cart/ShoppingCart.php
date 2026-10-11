@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Contracts\Session\Session;
+use Illuminate\Support\Facades\Cache;
 
 class ShoppingCart
 {
@@ -43,7 +44,12 @@ class ShoppingCart
 
     public function count(): int
     {
-        return array_sum($this->quantities());
+        return (int) Cache::remember($this->countCacheKey(), 3600, fn (): int => array_sum($this->quantities()));
+    }
+
+    public function forgetCount(): void
+    {
+        Cache::forget($this->countCacheKey());
     }
 
     public function quantityOf(Product $product): int
@@ -72,6 +78,8 @@ class ShoppingCart
 
     public function clear(): void
     {
+        $this->forgetCount();
+
         if ($this->user === null) {
             $this->session->forget(self::SESSION_KEY);
 
@@ -123,6 +131,7 @@ class ShoppingCart
             return;
         }
 
+        $this->forgetCount();
         $this->session->forget(self::SESSION_KEY);
 
         $cart = $this->for($user);
@@ -162,6 +171,8 @@ class ShoppingCart
 
     private function write(int $productId, int $quantity): void
     {
+        $this->forgetCount();
+
         if ($this->user === null) {
             $items = $this->guestQuantities();
 
@@ -183,5 +194,12 @@ class ShoppingCart
         } else {
             $cart->items()->where('product_id', $productId)->delete();
         }
+    }
+
+    private function countCacheKey(): string
+    {
+        return $this->user instanceof User
+            ? "cart:count:user:{$this->user->id}"
+            : 'cart:count:session:'.$this->session->getId();
     }
 }

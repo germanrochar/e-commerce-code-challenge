@@ -6,8 +6,6 @@ An e-commerce application built with Laravel 13, Inertia, Vue 3, MySQL 8.4 and R
 
 The sample CSV provided with the challenge was downloaded on **October 11, 2026**. It ships unchanged as [`database/data/sample-products.csv`](database/data/sample-products.csv) and is imported automatically the first time the app starts.
 
-Design notes, decisions and how the project was built are in [docs/approach.md](docs/approach.md).
-
 - [Quick start (Docker)](#quick-start-docker)
 - [Demo accounts](#demo-accounts)
 - [Test cards](#test-cards)
@@ -15,6 +13,7 @@ Design notes, decisions and how the project was built are in [docs/approach.md](
 - [Development mode with hot reload](#development-mode-with-hot-reload)
 - [Running the tests](#running-the-tests)
 - [Troubleshooting](#troubleshooting)
+- [Approach, decisions and notes](#approach-decisions-and-notes)
 
 ## Quick start (Docker)
 
@@ -129,3 +128,7 @@ GitHub Actions runs these checks on every push to every branch.
 - **The first start seems stuck.** Run `make logs`. The app container prints a banner with the URL and credentials once the database is ready. On a cold machine, the image build and the first MySQL initialization can take a few minutes.
 - **I want a clean slate.** Run `make fresh`. It deletes the database, Redis and uploaded files, then loads the demo data again.
 - **A CSV upload stays in "Queued".** The `queue-imports` container processes imports; check that it's running with `docker compose ps`. Without Docker, make sure `composer dev`, or `php artisan queue:work --queue=default,imports`, is running.
+
+## Approach, decisions and notes
+
+Why the store was built this way: stack choices, the trade-offs I considered, and notes from the work (including performance). The write-up is in [docs/approach.md](docs/approach.md).
