@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Catalog\CatalogCache;
 use App\Enums\ImportErrorType;
 use App\Enums\ImportStatus;
 use App\Models\Category;
@@ -69,6 +70,8 @@ final class ProductImporter
         }
 
         $import->forceFill(['status' => ImportStatus::Completed, 'finished_at' => now()])->save();
+
+        app(CatalogCache::class)->bump();
 
         return $import;
     }
