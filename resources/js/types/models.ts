@@ -24,6 +24,41 @@ export type Product = {
     category?: CategorySummary;
 };
 
+export type ImportStatus = 'queued' | 'processing' | 'completed' | 'failed';
+
+export type ProductImport = {
+    id: number;
+    original_filename: string;
+    status: ImportStatus;
+    status_label: string;
+    is_finished: boolean;
+    progress: number;
+    total_rows: number;
+    processed_rows: number;
+    created_count: number;
+    duplicate_count: number;
+    invalid_count: number;
+    skipped_empty_count: number;
+    rejected_count: number;
+    failure_message: string | null;
+    uploaded_by: string | null;
+    created_at: string | null;
+    started_at: string | null;
+    finished_at: string | null;
+};
+
+export type ImportErrorType = 'validation' | 'duplicate';
+
+export type ProductImportError = {
+    id: number;
+    row_number: number;
+    sku: string | null;
+    column: string | null;
+    type: ImportErrorType;
+    message: string;
+    raw: Record<string, string | null>;
+};
+
 export type PageLink = {
     label: string;
     url: string | null;

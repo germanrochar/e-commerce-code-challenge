@@ -4,6 +4,7 @@ import {
     ArrowDown,
     ArrowUp,
     ArrowUpDown,
+    FileUp,
     Pencil,
     Plus,
     Search,
@@ -105,6 +106,12 @@ const columns: { key: SortKey; label: string; class?: string }[] = [
                 description="Create, edit and remove products from the catalog."
             />
             <div class="flex gap-2">
+                <Button variant="outline" as-child>
+                    <Link :href="admin.imports.index()">
+                        <FileUp class="size-4" />
+                        Import CSV
+                    </Link>
+                </Button>
                 <Button as-child>
                     <Link :href="admin.products.create()">
                         <Plus class="size-4" />

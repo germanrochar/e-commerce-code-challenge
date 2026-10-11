@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { Package, Store } from '@lucide/vue';
+import { FileUp, Package, Store } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -22,6 +22,11 @@ const mainNavItems: NavItem[] = [
         title: 'Products',
         href: admin.products.index(),
         icon: Package,
+    },
+    {
+        title: 'Imports',
+        href: admin.imports.index(),
+        icon: FileUp,
     },
     {
         title: 'Back to store',
