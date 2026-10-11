@@ -78,6 +78,49 @@ export type PageLink = {
     active: boolean;
 };
 
+export type CartLine = {
+    product: Product;
+    quantity: number;
+    line_total: Money;
+};
+
+export type Cart = {
+    lines: CartLine[];
+    count: number;
+    total: Money;
+    notices: string[];
+};
+
+export type TestCard = {
+    number: string;
+    outcome: string;
+};
+
+export type OrderStatus = 'pending' | 'paid' | 'failed' | 'expired';
+
+export type OrderItem = {
+    id: number;
+    sku: string;
+    name: string;
+    quantity: number;
+    unit_price: Money;
+    line_total: Money;
+    product_sku: string | null;
+};
+
+export type Order = {
+    key: string;
+    number: string;
+    status: OrderStatus;
+    status_label: string;
+    total: Money;
+    card: string | null;
+    placed_at: string | null;
+    paid_at: string | null;
+    item_count?: number;
+    items?: OrderItem[];
+};
+
 export type Paginated<T> = {
     data: T[];
     meta: {

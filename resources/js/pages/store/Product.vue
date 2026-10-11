@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { ChevronRight, PackageCheck, Ruler, Truck } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import AddToCartButton from '@/components/store/AddToCartButton.vue';
 import ProductCard from '@/components/store/ProductCard.vue';
 import ProductImage from '@/components/store/ProductImage.vue';
 import StockBadge from '@/components/store/StockBadge.vue';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { home } from '@/routes';
 import type { Product } from '@/types';
 
@@ -30,6 +33,8 @@ const availability = computed(() => {
         class: 'text-emerald-600 dark:text-emerald-400',
     };
 });
+
+const quantity = ref(1);
 </script>
 
 <template>
@@ -87,7 +92,21 @@ const availability = computed(() => {
                 {{ availability.text }}
             </p>
 
-            <slot name="purchase" />
+            <div v-if="product.in_stock" class="flex flex-wrap items-end gap-3">
+                <div class="grid gap-2">
+                    <Label for="quantity">Quantity</Label>
+                    <Input
+                        id="quantity"
+                        type="number"
+                        class="w-24"
+                        :min="1"
+                        :max="product.stock"
+                        v-model.number="quantity"
+                    />
+                </div>
+                <AddToCartButton :product="product" :quantity="quantity" />
+            </div>
+            <AddToCartButton v-else :product="product" />
 
             <p
                 v-if="product.description"

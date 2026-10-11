@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import AddToCartButton from '@/components/store/AddToCartButton.vue';
 import ProductImage from '@/components/store/ProductImage.vue';
 import StockBadge from '@/components/store/StockBadge.vue';
 import { show } from '@/routes/products';
@@ -34,7 +35,7 @@ defineProps<{ product: Product }>();
                 <p class="text-lg font-semibold tabular-nums">
                     {{ product.price.formatted }}
                 </p>
-                <slot name="action" />
+                <AddToCartButton :product="product" size="sm" label="Add" />
             </div>
         </div>
     </article>

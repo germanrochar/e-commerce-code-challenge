@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { LayoutDashboard, LogOut, Settings } from '@lucide/vue';
+import { LayoutDashboard, LogOut, Package, Settings } from '@lucide/vue';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -10,6 +10,7 @@ import {
 import UserInfo from '@/components/UserInfo.vue';
 import { logout } from '@/routes';
 import admin from '@/routes/admin';
+import { index as orders } from '@/routes/orders';
 import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 
@@ -38,6 +39,12 @@ const page = usePage();
             <Link class="block w-full cursor-pointer" :href="admin.home()">
                 <LayoutDashboard class="mr-2 h-4 w-4" />
                 Admin panel
+            </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem :as-child="true">
+            <Link class="block w-full cursor-pointer" :href="orders()">
+                <Package class="mr-2 h-4 w-4" />
+                Orders
             </Link>
         </DropdownMenuItem>
         <DropdownMenuItem :as-child="true">

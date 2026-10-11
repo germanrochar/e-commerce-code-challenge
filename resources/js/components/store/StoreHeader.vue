@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { ChevronDown, Search } from '@lucide/vue';
+import { ChevronDown, Search, ShoppingCart } from '@lucide/vue';
 import { ref, watch } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import UserInfo from '@/components/UserInfo.vue';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { home, login, register } from '@/routes';
+import { index as cart } from '@/routes/cart';
 
 const page = usePage();
 
@@ -69,6 +70,23 @@ const submit = () => {
 
             <nav class="ml-auto flex items-center gap-2">
                 <slot name="actions" />
+
+                <Button variant="ghost" size="icon" class="relative" as-child>
+                    <Link
+                        :href="cart()"
+                        aria-label="Cart"
+                        data-test="cart-link"
+                    >
+                        <ShoppingCart class="size-5" />
+                        <span
+                            v-if="page.props.cartCount > 0"
+                            class="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground"
+                            data-test="cart-count"
+                        >
+                            {{ page.props.cartCount }}
+                        </span>
+                    </Link>
+                </Button>
 
                 <DropdownMenu v-if="page.props.auth.user">
                     <DropdownMenuTrigger as-child>
