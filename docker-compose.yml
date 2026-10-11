@@ -1,0 +1,171 @@
+name: ecommerce-challenge
+
+x-app-environment: &app-environment
+  APP_NAME: Storefront
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_URL: http://localhost:${APP_PORT:-8080}
+  LOG_CHANNEL: stderr
+  LOG_STDERR_FORMATTER: Monolog\Formatter\JsonFormatter
+  LOG_LEVEL: info
+  DB_CONNECTION: mysql
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_DATABASE: ecommerce
+  DB_USERNAME: ecommerce
+  DB_PASSWORD: secret
+  DB_READ_HOST: ${DOCKER_DB_READ_HOST:-}
+  REDIS_CLIENT: phpredis
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  CACHE_STORE: redis
+  SESSION_DRIVER: redis
+  QUEUE_CONNECTION: redis
+  FILESYSTEM_DISK: local
+  MAIL_MAILER: log
+  PAYMENT_FAKE_LATENCY_MS: ${DOCKER_PAYMENT_LATENCY_MS:-300}
+  PHP_FPM_PM_MAX_CHILDREN: ${DOCKER_FPM_MAX_CHILDREN:-16}
+  PHP_OPCACHE_MEMORY_CONSUMPTION: ${DOCKER_OPCACHE_MEMORY_MB:-256}
+
+x-app: &app
+  build:
+    context: .
+    target: prod
+  image: ecommerce-challenge:latest
+  restart: unless-stopped
+  volumes:
+    - app-storage:/var/www/html/storage/app
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  app:
+    <<: *app
+    environment:
+      <<: *app-environment
+      CONTAINER_ROLE: app
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/up"]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 12
+
+  queue:
+    <<: *app
+    command: ["php", "/var/www/html/artisan", "queue:work", "redis", "--queue=default", "--tries=3", "--backoff=5", "--max-jobs=1000", "--max-time=3600"]
+    environment:
+      <<: *app-environment
+      CONTAINER_ROLE: queue
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "healthcheck-queue"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+
+  queue-imports:
+    <<: *app
+    command: ["php", "-d", "memory_limit=512M", "/var/www/html/artisan", "queue:work", "redis", "--queue=imports", "--tries=3", "--timeout=1800", "--max-jobs=50", "--max-time=3600"]
+    environment:
+      <<: *app-environment
+      CONTAINER_ROLE: queue
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "healthcheck-queue"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+
+  scheduler:
+    <<: *app
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+    environment:
+      <<: *app-environment
+      CONTAINER_ROLE: scheduler
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "healthcheck-schedule"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: ecommerce
+      MYSQL_USER: ecommerce
+      MYSQL_PASSWORD: secret
+    command: ["--innodb-buffer-pool-size=512M", "--max-connections=500", "--innodb-ft-min-token-size=2"]
+    ports:
+      - "${FORWARD_DB_PORT:-33060}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      start_period: 30s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "volatile-lru"]
+    ports:
+      - "${FORWARD_REDIS_PORT:-63790}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  test:
+    build:
+      context: .
+      target: dev
+    image: ecommerce-challenge:dev
+    profiles: ["tools"]
+    environment:
+      SHOW_WELCOME_MESSAGE: "false"
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: testing
+      DB_USERNAME: root
+      DB_PASSWORD: secret
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: ["sh", "-c", "[ -f .env ] || cp .env.example .env; php artisan test"]
+
+  k6:
+    image: grafana/k6:latest
+    profiles: ["tools"]
+    volumes:
+      - ./loadtest:/scripts:ro
+    environment:
+      BASE_URL: http://app:8080
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  app-storage:
+  mysql-data:
+  redis-data:
