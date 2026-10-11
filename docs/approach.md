@@ -124,9 +124,12 @@ Also already in place: Redis for cache, sessions and queues; queued mail and imp
 
 ## How AI was used
 
-Built in Cursor with an agent as a pair programmer I directed and reviewed.
+Built in Cursor. I directed and reviewed; the agent implemented.
 
-- **I decided.** Open questions, PHPUnit not Pest, guest carts, filters/sort/pagination, no Octane/FrankenPHP, reject duplicate SKUs, one-command setup, CI on push only.
-- **The agent typed and checked.** Code, tests, Pint, Larastan, frontend checks, browser passes, large-import timings. One feature branch at a time.
-- **Review caught real bugs.** Silent CI format failure, demo admin seeded before `role` existed, `?q[]=x` 500, `composer dev` missing the import queue, git rewriting CSV line endings. Fixed, with a test where it made sense.
-- **No AI comments in the code**, as the brief requires.
+I set the stack and the rules: PHPUnit, guest carts, catalog filters/sort/pagination, reject duplicate SKUs, one-command Docker setup, CI on push only. Open questions were settled before a branch started.
+
+The agent wrote the code and tests, ran Pint, Larastan, frontend checks and browser passes, and timed the large imports. One feature branch at a time.
+
+Review caught real bugs: a silent CI format failure, the demo admin seeded before `role` existed, `?q[]=x` 500ing, `composer dev` missing the import queue, and git rewriting CSV line endings. Each was fixed, with a test where it made sense.
+
+No AI comments in the code, as the brief requires.
