@@ -13,4 +13,9 @@ enum ImportStatus: string
     {
         return $this === self::Completed || $this === self::Failed;
     }
+
+    public function label(): string
+    {
+        return ucfirst($this->value);
+    }
 }

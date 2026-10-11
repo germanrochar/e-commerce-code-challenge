@@ -22,7 +22,7 @@ class Category extends Model
 
     public static function normalizeName(string $name): string
     {
-        return Str::of($name)->squish()->title()->toString();
+        return Str::of($name)->squish()->ucfirst()->toString();
     }
 
     public static function slugFor(string $name): string
