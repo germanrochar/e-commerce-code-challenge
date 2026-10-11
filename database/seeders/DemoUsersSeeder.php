@@ -16,13 +16,16 @@ class DemoUsersSeeder extends Seeder
 
     private function createUser(string $name, string $email, UserRole $role): void
     {
-        $user = new User;
-        $user->forceFill([
-            'name' => $name,
-            'email' => $email,
-            'password' => 'password',
-            'role' => $role,
-            'email_verified_at' => now(),
-        ])->save();
+        $user = User::query()->firstOrNew(['email' => $email]);
+
+        if (! $user->exists) {
+            $user->forceFill([
+                'name' => $name,
+                'password' => 'password',
+                'email_verified_at' => now(),
+            ]);
+        }
+
+        $user->forceFill(['role' => $role])->save();
     }
 }

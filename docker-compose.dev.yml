@@ -1,65 +1,75 @@
 x-dev-app: &dev-app
-  build:
-    context: .
-    target: dev
-  image: ecommerce-challenge:dev
-  volumes:
-    - .:/var/www/html
-    - dev-node-modules:/var/www/html/node_modules
-    - app-storage:/var/www/html/storage/app
+    build:
+        context: .
+        target: dev
+    image: ecommerce-challenge:dev
+    volumes:
+        - .:/var/www/html
+        - dev-node-modules:/var/www/html/node_modules
+        - app-storage:/var/www/html/storage/app
 
 x-dev-environment: &dev-environment
-  APP_ENV: local
-  APP_DEBUG: "true"
-  LOG_LEVEL: debug
-  MAIL_MAILER: smtp
-  MAIL_HOST: mailpit
-  MAIL_PORT: 1025
+    APP_ENV: local
+    APP_DEBUG: 'true'
+    LOG_LEVEL: debug
+    MAIL_MAILER: smtp
+    MAIL_HOST: mailpit
+    MAIL_PORT: 1025
 
 services:
-  app:
-    <<: *dev-app
-    environment:
-      <<: *dev-environment
-      CONTAINER_ROLE: app
+    app:
+        <<: *dev-app
+        environment:
+            <<: *dev-environment
+            CONTAINER_ROLE: app
 
-  queue:
-    <<: *dev-app
-    environment:
-      <<: *dev-environment
-      CONTAINER_ROLE: queue
+    queue:
+        <<: *dev-app
+        environment:
+            <<: *dev-environment
+            CONTAINER_ROLE: queue
 
-  queue-imports:
-    <<: *dev-app
-    environment:
-      <<: *dev-environment
-      CONTAINER_ROLE: queue
+    queue-imports:
+        <<: *dev-app
+        environment:
+            <<: *dev-environment
+            CONTAINER_ROLE: queue
 
-  scheduler:
-    <<: *dev-app
-    environment:
-      <<: *dev-environment
-      CONTAINER_ROLE: scheduler
+    scheduler:
+        <<: *dev-app
+        environment:
+            <<: *dev-environment
+            CONTAINER_ROLE: scheduler
 
-  vite:
-    <<: *dev-app
-    command: ["npm", "run", "dev"]
-    environment:
-      <<: *dev-environment
-      VITE_DEV_SERVER_HOST: 0.0.0.0
-      VITE_HMR_HOST: localhost
-    ports:
-      - "${VITE_PORT:-5173}:5173"
-    depends_on:
-      app:
-        condition: service_healthy
-    healthcheck:
-      disable: true
+    vite:
+        <<: *dev-app
+        command: ['npm', 'run', 'dev']
+        environment:
+            <<: *dev-environment
+            VITE_DEV_SERVER_HOST: 0.0.0.0
+            VITE_HMR_HOST: localhost
+        ports:
+            - '${VITE_PORT:-5173}:5173'
+        depends_on:
+            app:
+                condition: service_healthy
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'node',
+                    '-e',
+                    "fetch('http://127.0.0.1:5173/@vite/client').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 30
+            start_period: 10s
 
-  mailpit:
-    image: axllent/mailpit:latest
-    ports:
-      - "${MAILPIT_PORT:-8025}:8025"
+    mailpit:
+        image: axllent/mailpit:latest
+        ports:
+            - '${MAILPIT_PORT:-8025}:8025'
 
 volumes:
-  dev-node-modules:
+    dev-node-modules:
