@@ -32,6 +32,10 @@ export default defineConfig({
         }),
     ]),
     server: {
+        host: process.env.VITE_DEV_SERVER_HOST,
+        hmr: process.env.VITE_HMR_HOST
+            ? { host: process.env.VITE_HMR_HOST }
+            : undefined,
         watch: {
             ignored: [
                 '**/.agents/**',
