@@ -10,6 +10,19 @@ export type CategorySummary = {
     slug: string;
 };
 
+export type CategoryFacet = CategorySummary & {
+    count: number;
+};
+
+export type CatalogSort = 'relevance' | 'name' | 'price';
+
+export type CatalogFilters = {
+    q: string;
+    category: string | null;
+    sort: CatalogSort;
+    dir: 'asc' | 'desc';
+};
+
 export type Product = {
     id: number;
     sku: string;

@@ -156,6 +156,11 @@ jobs:
       - name: Health check responds
         run: curl -fsS http://localhost:8080/up
 
+      - name: Catalog serves the seeded sample products
+        run: |
+          curl -fsS "http://localhost:8080/?q=running" | grep -q "Running Shoes"
+          curl -fsS http://localhost:8080/products/RS-001 | grep -q "RS-001"
+
       - name: Show logs on failure
         if: failure()
         run: docker compose logs --no-color
