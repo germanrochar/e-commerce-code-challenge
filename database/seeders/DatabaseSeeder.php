@@ -10,7 +10,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         if (User::query()->exists()) {
-            $this->command?->info('Database already seeded, skipping.');
+            $this->command->info('Database already seeded, skipping.');
 
             return;
         }
