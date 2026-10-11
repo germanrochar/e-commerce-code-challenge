@@ -13,7 +13,7 @@ This is the longer write-up for how the store was designed and built. For runnin
 2. **Read the data first.** The sample CSV is small but full of planted problems. Before writing the importer, I went through it row by row and wrote down the expected outcome: 85 products created, 7 invalid rows, 3 duplicates and 2 empty rows. Those numbers, and the message expected for each rejected row, became the importer's tests.
 3. **A plan, then one feature branch at a time.** I wrote the plan up front, then built it in this order: CI, Docker, the domain model, admin CRUD, CSV import, the catalog, then cart, checkout and orders. Each feature lives on its own branch with [Conventional Commits](https://www.conventionalcommits.org/) and is merged into `main` with `--no-ff`, so the history shows one merge per feature.
 4. **Test everything that matters, on the real database.** PHPUnit feature tests cover authorization, validation, the importer (including a 20,000-row file, a crash halfway through an import and a repeat import of the same file), search, filtering, sorting, the cart, checkout and order history. They run on MySQL because the app depends on MySQL behaviour.
-5. **Check it as a user would.** Every screen was clicked through in a browser on the development stack, and a 100,000-row import was run through the real queue worker while watching the progress page. CI builds the Docker stack from scratch on every push and checks that the seeded catalog is served, so "it works on my machine" is checked automatically.
+5. **Check it as a user would.** Every screen was clicked through in a browser on the development stack, and a 100,000-row import was run through the real queue worker while watching the progress page. CI runs the PHPUnit suite and the lint checks on every push.
 
 ## Decisions and alternatives considered
 
@@ -132,11 +132,10 @@ The image is built on [serversideup/php](https://serversideup.net/open-source/do
 
 GitHub Actions runs on every push to every branch, merges included, but not when a pull request is opened, so each commit is tested exactly once. A new push cancels any run still in progress for the same branch.
 
-It runs three jobs:
+It runs two jobs:
 
 1. **Tests:** the PHPUnit suite on a MySQL service.
 2. **Lint:** Pint, Larastan at level 7, frontend lint and format, and the TypeScript check.
-3. **Docker smoke test:** builds the stack from scratch, waits for health checks, and checks that the sample products are served.
 
 ### Placeholder product images
 

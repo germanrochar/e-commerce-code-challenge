@@ -58,12 +58,12 @@ Guests can browse, search and fill a cart without an account. They're asked to l
 
 Payments are simulated. No real card is charged. Use any future expiry (`12/34` works) and any 3-digit CVC (`123` works).
 
-| Number                 | Outcome            |
-| ---------------------- | ------------------ |
-| `4242 4242 4242 4242`  | Approved           |
-| `4000 0000 0000 0002`  | Declined           |
-| `4000 0000 0000 9995`  | Insufficient funds |
-| `4000 0000 0000 0119`  | Gateway error      |
+| Number                | Outcome            |
+| --------------------- | ------------------ |
+| `4242 4242 4242 4242` | Approved           |
+| `4000 0000 0000 0002` | Declined           |
+| `4000 0000 0000 9995` | Insufficient funds |
+| `4000 0000 0000 0119` | Gateway error      |
 
 The checkout page also has buttons that fill these numbers for you.
 
@@ -121,7 +121,7 @@ vendor/bin/pint --test && vendor/bin/phpstan analyse
 npm run check && npm run types:check         # frontend lint, format and TypeScript
 ```
 
-GitHub Actions runs these checks on every push to every branch. It also builds the Docker stack from scratch and checks that the sample catalog is served.
+GitHub Actions runs these checks on every push to every branch.
 
 ## Troubleshooting
 
