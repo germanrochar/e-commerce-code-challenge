@@ -67,7 +67,7 @@ if [ "$ROLE" = "app" ]; then
     php artisan config:clear --no-ansi >/dev/null
     log "Running migrations"
     php artisan migrate --force --isolated --no-ansi
-    log "Seeding (only runs on an empty database)"
+    log "Seeding demo accounts and the sample catalog (safe to repeat)"
     php artisan db:seed --force --no-ansi
     php artisan storage:link --no-ansi >/dev/null 2>&1 || true
 fi
