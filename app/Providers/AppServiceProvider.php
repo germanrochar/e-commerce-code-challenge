@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Jobs\ImportProducts;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -19,6 +21,18 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureAuthorization();
+        $this->configureDevCommands();
+    }
+
+    protected function configureDevCommands(): void
+    {
+        if (! $this->app->runningInConsole()) {
+            return;
+        }
+
+        DevCommands::except('queue');
+        DevCommands::artisan('queue:listen --queue=default,'.ImportProducts::QUEUE.' --tries=1 --timeout=0', 'queues');
+        DevCommands::artisan('schedule:work', 'scheduler');
     }
 
     protected function configureDefaults(): void
